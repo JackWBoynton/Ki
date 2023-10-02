@@ -126,6 +126,16 @@ Ki.defaultUrlEntities = defaultUrlEntities
 --- The internal [finite state machine](https://github.com/unindented/lua-fsm#usage) used to manage modes in Ki.
 Ki.state = {}
 
+--- Ki.modeTimeoutTimer
+--- Variable
+--- a timer that resets to DESKTOP (no keybinds) mode after modeTimeoutTimerTimeoutSeconds seconds
+Ki.modeTimeoutTimer = nil
+
+--- Ki.modeTimeoutTimerTimeoutSeconds
+--- Variable
+--- After modeTimeoutTimerTimeoutSeconds mode will be reset to DESKTOP
+Ki.modeTimeoutTimerTimeoutSeconds = 5
+
 -- Create a metatable defined with state events operations
 function Ki._createStatesMetatable()
     return {
@@ -517,6 +527,14 @@ function Ki:_createFsmCallbacks()
             self.history.workflow = {}
             self.history.action = {}
         end
+        -- Start the timer when entering any non-desktop mode
+        if nextState ~= "desktop" then
+            if self.modeTimeoutTimer then
+                self.modeTimeoutTimer:stop() -- Stop existing timer if any
+            end
+            -- Start a new timer to revert to desktop mode after  seconds
+            self.modeTimeoutTimer = hs.timer.doAfter(self.modeTimeoutTimerTimeoutSeconds, function() self.state:exitMode() end)
+        end
     end
 
     return callbacks
@@ -530,6 +548,12 @@ function Ki:_handleKeyDown(event)
 
     local flags = event:getFlags()
     local keyName = hs.keycodes.map[event:getKeyCode()]
+
+    -- If in a non-desktop mode and a timer exists, reset it
+    if self.state.current ~= "desktop" and self.modeTimeoutTimer then
+        self.modeTimeoutTimer:stop()
+        self.modeTimeoutTimer = hs.timer.doAfter(self.modeTimeoutTimerTimeoutSeconds, function() self.state:exitMode() end)
+    end
 
     -- Determine event handler
     for _, workflowEvent in pairs(workflowEvents) do
