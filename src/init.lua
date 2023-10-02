@@ -435,6 +435,7 @@ Ki._defaultStateEvents = {
     { name = "exitMode", from = "action", to = "desktop" },
     { name = "exitMode", from = "volume", to = "desktop" },
     { name = "exitMode", from = "brightness", to = "desktop" },
+    { name = "exitMode", from = "desktop", to = "desktop" },
 }
 setmetatable(Ki._defaultStateEvents, Ki._createStatesMetatable())
 
